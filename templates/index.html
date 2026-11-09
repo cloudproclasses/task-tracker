@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Task Tracker</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#777;--line:#ddd;--acc:#1a5fb4}
+@media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#eee;--mut:#999;--line:#333;--acc:#62a0ea}}
+body{font:16px system-ui,sans-serif;background:var(--bg);color:var(--fg);max-width:560px;margin:2rem auto;padding:0 1rem}
+h1{color:var(--acc)}form.add{display:flex;gap:.5rem;margin-bottom:1rem}
+input[name=title]{flex:1;padding:.5rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+button{padding:.4rem .8rem;border:0;border-radius:6px;background:var(--acc);color:#fff;cursor:pointer;font:inherit}
+button.s{background:none;color:var(--mut);border:1px solid var(--line)}
+ul{list-style:none;padding:0}li{display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+li span{flex:1}li.done span{text-decoration:line-through;color:var(--mut)}li form{margin:0}
+</style></head><body>
+<h1>Task Tracker</h1>
+<form class="add" method="post" action="{{ url_for('add') }}">
+  <input name="title" placeholder="New task…" maxlength="200" required autofocus>
+  <button>Add</button>
+</form>
+<ul>
+{% for t in tasks %}
+  <li class="{{ 'done' if t.done }}">
+    <form method="post" action="{{ url_for('toggle', tid=t.id) }}"><button class="s">{{ '↩' if t.done else '✓' }}</button></form>
+    <span>{{ t.title }}</span>
+    <form method="post" action="{{ url_for('delete', tid=t.id) }}"><button class="s">✕</button></form>
+  </li>
+{% else %}
+  <li><span class="mut">No tasks yet.</span></li>
+{% endfor %}
+</ul>
+</body></html>
