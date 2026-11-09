@@ -1,5 +1,5 @@
-"""Simple monolithic task tracker: Flask + Amazon RDS (PostgreSQL),
-with database credentials read from AWS Secrets Manager."""
+"""Simple monolithic task tracker: Flask + Amazon RDS (PostgreSQL).
+The DB password is read from AWS Secrets Manager (plain-text password, or JSON with username/password/host/dbname)."""
 import json
 import os
 import threading
@@ -27,7 +27,13 @@ def get_secret(force=False):
         if force or _secret["value"] is None or time.time() - _secret["at"] > SECRET_TTL:
             sm = boto3.client("secretsmanager", region_name=os.environ["AWS_REGION"])
             raw = sm.get_secret_value(SecretId=os.environ["DB_SECRET_ID"])["SecretString"]
-            _secret["value"], _secret["at"] = json.loads(raw), time.time()
+            try:
+                val = json.loads(raw)
+            except ValueError:
+                val = None
+            if not isinstance(val, dict):  # plain-text secret = just the password
+                val = {"password": raw}
+            _secret["value"], _secret["at"] = val, time.time()
         return _secret["value"]
 
 
@@ -38,7 +44,7 @@ def _new_pool():
         host=s.get("host") or os.environ["DB_HOST"],
         port=int(s.get("port") or os.getenv("DB_PORT", "5432")),
         dbname=s.get("dbname") or os.getenv("DB_NAME", "appdb"),
-        user=s["username"],
+        user=s.get("username") or os.environ["DB_USER"],
         password=s["password"],
         sslmode=os.getenv("DB_SSLMODE", "require"),
         connect_timeout=5,
